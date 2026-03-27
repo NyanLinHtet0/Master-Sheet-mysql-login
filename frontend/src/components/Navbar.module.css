@@ -1,0 +1,16 @@
+.navbar {
+  padding: 15px 30px;
+  background-color: #0f172a;
+  display: flex;
+  gap: 25px;
+}
+
+.link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  color: #3b82f6;
+}

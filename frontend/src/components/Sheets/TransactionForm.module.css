@@ -1,0 +1,22 @@
+/* Your existing inputRow styles (assuming it's a flex container) */
+.inputRow {
+  display: flex;
+  flex-direction: column; /* Default horizontal layout */
+  /* ... other properties ... */
+}
+
+/* Media query for viewports <= 820px width and <= 1180px height */
+@media (max-width: 850px) and (max-height: 1300px) {
+  .inputRow {
+    flex-direction: column;
+    gap: 10px; /* Optional: Adds some space between the vertically stacked fields */
+  }
+}
+
+
+@media (max-width: 2000px) {
+  .inputRow {
+    flex-direction: column;
+    gap: 10px; /* Optional: Adds some space between the vertically stacked fields */
+  }
+}
