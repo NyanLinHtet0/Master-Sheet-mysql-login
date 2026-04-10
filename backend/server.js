@@ -1,63 +1,34 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
+
+require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const syncRoutes = require("./routes/sync");
+const db = require("./db");
 
 const app = express();
 const PORT = 3000;
 
-// This allows Express to understand JSON data sent from React
+app.use(cors());
 app.use(express.json());
 
-// The absolute path to your JSON database file
-const DATA_FILE = path.join(__dirname, 'data', 'corps.json');
+// Attach the sync routes to the /api/sync endpoint
+app.use("/api/sync", syncRoutes);
 
-// --- GET: Send the corporations to React ---
-app.get('/api/corps', (req, res) => {
-  fs.readFile(DATA_FILE, 'utf8', (err, data) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Failed to read data' });
-    }
-    try {
-      let corps = JSON.parse(data);
-      res.json(corps);
-    } catch (parseError) {
-      return res.status(500).json({ error: 'Database JSON is corrupted' });
-    }
-  });
+app.get("/", (req, res) => {
+  res.send("Backend running");
 });
 
-// --- POST: Save a new corp OR update an existing corp ---
-app.post('/api/corps', (req, res) => {
-  const incomingCorp = req.body;
-
+async function startServer() {
   try {
-    const data = fs.readFileSync(DATA_FILE, 'utf8');
-    let corps = data.trim() ? JSON.parse(data) : [];
-    if (!Array.isArray(corps)) corps = [];
+    await db.initializePool();
 
-    const existingIndex = corps.findIndex(c => c.name === incomingCorp.name);
-
-    if (existingIndex >= 0) {
-      corps[existingIndex] = incomingCorp;
-    } else {
-      corps.push(incomingCorp);
-    }
-
-    fs.writeFileSync(DATA_FILE, JSON.stringify(corps, null, 2));
-    res.json({ success: true, message: 'Saved successfully!' });
-
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
   } catch (error) {
-    console.error("Database error:", error);
-    res.status(500).json({ error: 'Failed to process data' });
+    console.error("Failed to start server:", error);
+    process.exit(1);
   }
-});
+}
 
-app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend server running on http://0.0.0.0:${PORT}`);
-  console.log(`(Accessible on your network)`);
-});
+startServer();

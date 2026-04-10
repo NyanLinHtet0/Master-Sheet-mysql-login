@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import TransactionTable from './TransactionTable';
-import SaveButton from './SaveButton';
 import styles from '../../pages/Sheets.module.css';
 
-export default function CorpDetails({ selectedCorp, onDeleteTransaction, onUpdateTransaction, isDirty, onSave }) {
+export default function CorpDetails({ selectedCorp, onDeleteTransaction, onUpdateTransaction}) {
   const [isSingleTableView, setIsSingleTableView] = useState(false);
 
   if (!selectedCorp) {
@@ -29,33 +28,34 @@ export default function CorpDetails({ selectedCorp, onDeleteTransaction, onUpdat
       return displayTx;
   });
 
+  // Note: If you want transactions to stay in their original Income/Expense tables 
+  // regardless of the visual flip, change `displayTx.amount` to `tx.amount` below.
   const incomeTx = txWithIndex.filter(tx => tx.amount >= 0);
   const expenseTx = txWithIndex.filter(tx => tx.amount < 0);
 
-  const isForeign = selectedCorp.name && selectedCorp.name.includes('ဝယ်စာရင်း');
+  const isForeign = selectedCorp.is_foreign;
+  // Fallback to 'Baht' or similar if the name doesn't contain the split word anymore
   const currencyName = isForeign ? selectedCorp.name.split('ဝယ်စာရင်း')[0].trim() : '';
 
   // <--- APPLY INVERSE LOGIC TO HEADER TOTALS --->
   const displayTotalMmk = isInverse ? -Number(selectedCorp.total_mmk || 0) : Number(selectedCorp.total_mmk || 0);
   const displayTotalForeign = isInverse ? -Number(selectedCorp.total_foreign || 0) : Number(selectedCorp.total_foreign || 0);
 
+  // FIXED: Math.abs applied before toLocaleString
   const currentRate = (isForeign && Number(selectedCorp.total_foreign)) 
-    ? (displayTotalMmk / displayTotalForeign).toLocaleString(undefined, { maximumFractionDigits: 2 }) 
+    ? Math.abs(displayTotalMmk / displayTotalForeign).toLocaleString(undefined, { maximumFractionDigits: 2 })
     : '-';
 
   return (
     <div className={styles.corpDetails}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)' }}>
         <h2 style={{ margin: 0, fontSize: '24px', color: 'var(--text-main)' }}>{selectedCorp.name}</h2>
-        <div>
-          <SaveButton isDirty={isDirty} onSave={onSave} />
-        </div>
       </div>
 
       <div className={styles.balanceContainer} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
           {/* <--- USE INVERTED TOTALS ---> */}
-          <span style={{ fontWeight: '600' }}>Balance: {displayTotalMmk.toLocaleString()} MMK</span>
+          <span style={{ fontWeight: '600' }}>Balance: {displayTotalMmk.toLocaleString(undefined, {maximumFractionDigits: 0})} MMK</span>
           {isForeign && (
             <>
               <span className={styles.divider}>|</span>
@@ -83,7 +83,8 @@ export default function CorpDetails({ selectedCorp, onDeleteTransaction, onUpdat
               title="All Transactions"
               data={txWithIndex} 
               type="all" 
-              corpname={selectedCorp.name}
+              currencyName={currencyName}
+              isForeign={selectedCorp.is_foreign}
               onDelete={onDeleteTransaction}
               onUpdate={onUpdateTransaction}
             />
@@ -95,7 +96,8 @@ export default function CorpDetails({ selectedCorp, onDeleteTransaction, onUpdat
                 title="Income (In)"
                 data={incomeTx} 
                 type="income" 
-                corpname={selectedCorp.name}
+                currencyName={currencyName}
+                isForeign={selectedCorp.is_foreign}
                 onDelete={onDeleteTransaction}
                 onUpdate={onUpdateTransaction}
               />
@@ -105,7 +107,8 @@ export default function CorpDetails({ selectedCorp, onDeleteTransaction, onUpdat
                 title="Expense (Out)"
                 data={expenseTx} 
                 type="expense" 
-                corpname={selectedCorp.name}
+                currencyName={currencyName}
+                isForeign={selectedCorp.is_foreign}
                 onDelete={onDeleteTransaction}
                 onUpdate={onUpdateTransaction}
               />

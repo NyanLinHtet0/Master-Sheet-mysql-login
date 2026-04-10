@@ -19,7 +19,6 @@ function CorpList({
   onAddTransaction 
 }) {
   const isBahtCorp = newCorpName.includes('ဝယ်စာရင်း');
-
   return (
     <div className={styles.corpList}>
       <div className={styles.corpListHeader}>
@@ -96,6 +95,7 @@ function CorpList({
       {selectedCorp && (
         <TransactionForm 
            corpname={selectedCorp.name} 
+           isForeign={selectedCorp.is_foreign}
            onSubmit={onAddTransaction} 
         />
       )}

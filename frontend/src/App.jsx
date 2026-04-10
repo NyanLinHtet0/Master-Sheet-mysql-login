@@ -1,80 +1,64 @@
-import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import Sheets from "./pages/Sheets";
-import View from "./pages/View";
-import Login from "./pages/Login";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Navbar from './app/Navbar';
+import Sheets from './pages/Sheets';
+import Home from './pages/Home';
+import View from './pages/View';
+import { useSyncState } from './data_management/data_init'; // <-- Import the hook
+import { useSyncManager } from './data_management/data_save';
+
+
 
 function App() {
-  // auth state
-  const [isAuth, setIsAuth] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
-
-  // Hoisted state and initialization
-  const [corps, setCorps] = useState([]);
-
-  const fetchCorps = () => {
-    fetch("/api/corps", {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setCorps(data);
-        else setCorps([]);
-      })
-      .catch((err) => console.error("Error fetching corps:", err));
-  };
-
-  useEffect(() => {
-    fetch("/api/me", {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.auth) {
-          setIsAuth(true);
-          fetchCorps();
-        }
-        setAuthChecked(true);
-      })
-      .catch((err) => {
-        console.error("Error checking auth:", err);
-        setAuthChecked(true);
-      });
-  }, []);
-
-  if (!authChecked) {
-    return <div style={{ padding: "20px" }}>Loading...</div>;
-  }
-
-  if (!isAuth) {
-    return (
-      <Login
-        onLoginSuccess={() => {
-          setIsAuth(true);
-          fetchCorps();
-        }}
-      />
-    );
-  }
+  // <-- Call the hook to fetch DB data
+  const { appData, isLoading, error } = useSyncState(); 
+  
+  // Use our manager to handle drafts and the dirty map
+  const {
+    draftData,
+    isDirty,
+    handleInsertCorp,
+    handleCancel,
+    handleSave,
+    handleUpdate,
+    handleInsertRow,
+    handleRemoveDirtyRow,
+    setDraftData,
+  } = useSyncManager(appData);
+  // <-- Prevent app from rendering until DB data is downloaded
+  if (isLoading) return <div style={{padding: '20px'}}>Initializing Database...</div>;
+  if (error) return <div style={{padding: '20px'}}>Error: {error}</div>;
 
   return (
     <BrowserRouter>
-      <Navbar />
+      <Navbar isDirty={isDirty} onSave={handleSave} onCancel={handleCancel} />
 
-      <div style={{ padding: "20px" }}>
+      <div style={{ padding: "0" }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route
             path="/Sheets"
-            element={<Sheets corps={corps} fetchCorps={fetchCorps} />}
+            element={
+              <Sheets
+                corps={draftData?.corp_data || []}
+                globalTree={draftData?.global_tree || []}
+                assets={draftData?.assets || []}
+                linkTable={draftData?.link_table || []}
+                paymentTable={draftData?.payment_table || []}
+                onAddCorp={handleInsertCorp}
+                onQueueUpdate={handleUpdate}
+                onQueueInsert={handleInsertRow}
+                onRemoveDirtyRow={handleRemoveDirtyRow}
+                setDraftData={setDraftData}
+              />
+            }
           />
-          <Route path="/View" element={<View corps={corps} />} />
+          <Route
+            path="/View"
+            element={<View corps={draftData?.corp_data || []} />}
+          />
         </Routes>
       </div>
     </BrowserRouter>
   );
 }
-
 export default App;

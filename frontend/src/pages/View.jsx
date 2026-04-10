@@ -1,30 +1,30 @@
-import { useState, useEffect } from 'react';
-import CorpDropdown from '../components/CorpDropdown';
-import styles from './View.module.css';
+import { useMemo, useState } from 'react';
+import ViewFilters from '../view/ViewFilters';
+import ViewSummaryCards from '../view/ViewSummaryCards';
+import ViewTable from '../view/ViewTable';
+import {
+  buildViewMetrics,
+  filterCorpSummaries,
+  summarizeCorps,
+} from '../view/viewHelpers';
+import styles from '../view/view.module.css';
 
-function View({ corps }) {
-  // Parent holds the state
-  const [selectedCorp, setSelectedCorp] = useState(null);
+function View({ corps = [] }) {
+  const [search, setSearch] = useState('');
 
-  // Set default on load
-  useEffect(() => {
-    if (corps?.length > 0 && !selectedCorp) {
-      setSelectedCorp(corps[0]);
-    }
-  }, [corps, selectedCorp]);
+  const corpSummaries = useMemo(() => summarizeCorps(corps), [corps]);
+  const filteredRows = useMemo(
+    () => filterCorpSummaries(corpSummaries, search),
+    [corpSummaries, search]
+  );
+  const metrics = useMemo(() => buildViewMetrics(filteredRows), [filteredRows]);
 
   return (
-    <div className={styles.viewContainer}>
-      <CorpDropdown 
-        corps={corps} 
-        selectedCorp={selectedCorp} 
-        onSelect={(corp) => setSelectedCorp(corp)} 
-      />
-
-      {/* Other components will now automatically update because they use selectedCorp */}
-      <div className={styles.content}>
-      </div>
-    </div>
+    <section className={styles.page}>
+      <ViewFilters searchValue={search} onSearchChange={setSearch} />
+      <ViewSummaryCards metrics={metrics} />
+      <ViewTable rows={filteredRows} />
+    </section>
   );
 }
 
